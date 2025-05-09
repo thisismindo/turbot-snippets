@@ -1,0 +1,50 @@
+volumes:
+  rabbitmq-data:
+
+services:
+  rabbit-mq:
+    hostname: "rabbitmq-{{.Task.Slot}}"
+    image: rabbitmq:4.1.0-management-alpine
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: any
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - rabbitmq-data:/var/log/rabbitmq
+    configs:
+      - source: rabbitmq-cnf
+        target: /etc/rabbitmq/rabbitmq.conf
+      - source: rabbitmq-init
+        target: /etc/rabbitmq/rabbitmq-init.sh
+        mode: 0755
+    entrypoint: ["/bin/bash", "-c"]
+    command: |
+      rabbitmq-server &
+      until rabbitmq-diagnostics -q ping; do
+        echo "Waiting for RabbitMQ to be ready..."
+        sleep 15
+      done
+      /etc/rabbitmq/rabbitmq-init.sh
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - stream_net
+
+networks:
+  stream_net:
+    external: true
+
+configs:
+  rabbitmq-cnf:
+    external: true
+    name: rabbitmq-cnf
+  rabbitmq-init:
+    external: true
+    name: rabbitmq-init
