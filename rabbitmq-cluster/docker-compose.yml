@@ -4,7 +4,7 @@ volumes:
 services:
   rabbit-mq:
     hostname: "rabbitmq-{{.Task.Slot}}"
-    image: rabbitmq:4.1.0-management-alpine
+    image: rabbitmq:4.1.3-management-alpine
     deploy:
       replicas: 3
       restart_policy:
